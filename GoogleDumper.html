@@ -1,0 +1,38 @@
+<script>
+//	Array of Match, as example data.
+var exampleData = [];
+for (var i = 0; i < 10; i++)
+{
+	var p1Score = Math.floor((Math.random() * 3) + 1);
+	var p2Score = Math.floor((Math.random() * 2) + 1);
+	console.log()
+	exampleData[i] = new Match("Beans", "Sundowns", p1Score, p2Score);
+
+	exampleData[i].exampleFunction();
+}
+
+//	There are like 10 different ways to create objects/classes in JS
+//	so lets be consistent and use my way : 
+//	to create Match object var match = new Match(w,x,y,z)
+
+function Match (pOneName, pTwoName, pOneScore, pTwoScore)
+{
+	this.pOneName = pOneName;
+	this.pTwoName = pTwoName;
+	this.pOneScore = pOneScore;
+	this.pTwoScore = pTwoScore;
+
+	this.exampleFunction = function()
+	{
+		console.log("This is how 'object' functions work");
+	}
+}
+
+function dumpData(arrayOfMatches, gameName)
+{
+	//	Given an array of Match (see above), dump the four 
+	//	values in a google doc spreadsheet based on a url or somethin.
+	//	Will have dif urls for melee/pm/sm4sh, but ull have to 
+	//	figure that out. All I'm giving u is "Melee", "PM", "Sm4sh"
+}
+</script>

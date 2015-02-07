@@ -1,0 +1,14 @@
+{
+    "applications": {
+        "ChallongeScraper": {
+            "applicationId": "kpfF2WlF9mPHAmeJcb7aYMXCdB8quOJdtoYhwMkX", 
+            "masterKey": "BzBTf4KaVueyfN8BqXRH7puPSmMicDNfQ9zREg2M"
+        }, 
+        "_default": {
+            "link": "ChallongeScraper"
+        }
+    }, 
+    "global": {
+        "parseVersion": "1.3.4"
+    }
+}

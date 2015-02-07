@@ -1,0 +1,111 @@
+<script type="text/javascript" src="https://www.parsecdn.com/js/parse-1.3.4.min.js"></script>
+<script>
+
+//	Sync up the server with client/app keys
+Parse.initialize("kpfF2WlF9mPHAmeJcb7aYMXCdB8quOJdtoYhwMkX", "ZUxPMy6ZengnMzfbfltwqHerN5mi01zKg6qpqsfc");
+
+Parse.Cloud.run('getChallongeData', {},
+{
+	success: function(result) 
+	{
+		var tournaments = JSON.parse(result);
+		processTournaments(tournaments);
+	},
+	error: function() 
+	{
+		console.log("Failed getting from challonge");
+	}
+});
+
+//	Takes the response from challonge (a full list of all tornys)
+//	and refines it into those past the last time we updated.
+function processTournaments(tournaments)
+{
+	var LastTorny = Parse.Object.extend("LastTorny");
+	var lastTorny = new Parse.Query(LastTorny);
+	lastTorny.find(
+	{
+		success: function(lastTorny) 
+		{
+			//	Check if we have updated before, check the id of our 
+			//	last upload.
+			if (lastTorny.length > 0)
+			{
+				var lastID = lastTorny[0].get('lastID');
+				var listOfNewTornys = [];
+				for (var i = 0; i < tournaments.length; i++)
+				{
+					if (tournaments[i].tournament.id > lastID)
+					{
+						listOfNewTornys.push(tournaments[i].tournament.id);
+					}
+				}
+				getMatchData(listOfNewTornys);
+			}
+			//	Have never uploaded, upload all tornies from this account
+			else
+			{
+				var newLastTorny = new LastTorny();
+				newLastTorny.save(
+				{
+					lastID : tournaments[0].tournament.id,
+				},
+				{
+					success: function(newLastTorny)
+					{
+						var listOfNewTornys = [];
+						for (var i = 0; i < tournaments.length; i++)
+						{
+							listOfNewTornys.push(tournaments[i].tournament.id);
+						} 
+						getMatchData(listOfNewTornys);
+					},
+					error: function()
+					{
+						console.log("Failed during updating last torny")
+					}
+				});
+			}
+	 	},
+		error: function() 
+		{
+			console.log("Failed");
+		}
+	});
+}
+
+function getMatchData(idList)
+{
+	Parse.Cloud.run('getMatchesFromTournaments', {newTornys : idList},
+	{
+		success: function(result) 
+		{
+			var matchesFromAll = [];
+			for (var i = 0; i < result.length; i++)
+			{
+				//	Each of these has all the matches from 1 torny.
+				var matchesFromTorny = JSON.parse(result[i].text);
+				for (var j = 0; j < matchesFromTorny.length; j++)
+				{
+					matchesFromAll.push(matchesFromTorny[i]);
+				}
+			}
+			for (var i = 0; i < matchesFromAll.length; i++)
+			{
+				console.log(matchesFromAll[i].match);
+			}
+			convertMatchesToMatchUps(matchesFromAll);
+		},
+		error: function() 
+		{
+			console.log("Failed getting from challonge");
+		}
+	});
+}
+
+function convertMatchesToMatchUps(matcheS)
+{
+	//Parse.Cloud.run
+}
+
+</script>
