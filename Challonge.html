@@ -21,6 +21,7 @@ Parse.Cloud.run('getChallongeData', {},
 //	and refines it into those past the last time we updated.
 function processTournaments(tournaments)
 {
+	console.log(tournaments);
 	var LastTorny = Parse.Object.extend("LastTorny");
 	var lastTorny = new Parse.Query(LastTorny);
 	lastTorny.find(
@@ -40,7 +41,29 @@ function processTournaments(tournaments)
 						listOfNewTornys.push(tournaments[i].tournament.id);
 					}
 				}
-				getMatchData(listOfNewTornys);
+				if (listOfNewTornys.length > 0)
+				{
+					var newLastTorny = new LastTorny();
+					newLastTorny.save(
+					{
+						lastID : tournaments[tournaments.length-1].tournament.id,
+					},
+					{
+						success: function(newLastTorny)
+						{
+							getMatchData(listOfNewTornys);
+						},
+						error: function()
+						{
+							console.log("Failed during updating last torny")
+						}
+					});
+				}
+				else
+				{
+					getMatchData(listOfNewTornys);
+				}
+
 			}
 			//	Have never uploaded, upload all tornies from this account
 			else
@@ -48,7 +71,7 @@ function processTournaments(tournaments)
 				var newLastTorny = new LastTorny();
 				newLastTorny.save(
 				{
-					lastID : tournaments[0].tournament.id,
+					lastID : tournaments[tournaments.length-1].tournament.id,
 				},
 				{
 					success: function(newLastTorny)
@@ -69,7 +92,7 @@ function processTournaments(tournaments)
 	 	},
 		error: function() 
 		{
-			console.log("Failed");
+			console.log("Failed getting tournaments");
 		}
 	});
 }
@@ -87,25 +110,72 @@ function getMatchData(idList)
 				var matchesFromTorny = JSON.parse(result[i].text);
 				for (var j = 0; j < matchesFromTorny.length; j++)
 				{
-					matchesFromAll.push(matchesFromTorny[i]);
+					matchesFromAll.push(matchesFromTorny[j]);
 				}
-			}
-			for (var i = 0; i < matchesFromAll.length; i++)
-			{
-				console.log(matchesFromAll[i].match);
 			}
 			convertMatchesToMatchUps(matchesFromAll);
 		},
 		error: function() 
 		{
-			console.log("Failed getting from challonge");
+			console.log("Failed getting matches");
 		}
 	});
 }
 
-function convertMatchesToMatchUps(matcheS)
+function Match (winnerName, pOneName, pTwoName, pOneScore, pTwoScore)
 {
-	//Parse.Cloud.run
+	this.winnerName = winnerName;
+	this.pOneName = pOneName;
+	this.pTwoName = pTwoName;
+	this.pOneScore = pOneScore;
+	this.pTwoScore = pTwoScore;
+}
+
+function convertMatchesToMatchUps(matches)
+{
+	var setOfParticipants = {};
+	for (var i = 0; i < matches.length; i++)
+	{
+		var tempPlayerOne = "" + matches[i].match.player1_id + ":" + matches[i].match.tournament_id;
+		setOfParticipants[tempPlayerOne] = true;
+
+		var tempPlayerTwo = "" + matches[i].match.player2_id + ":" + matches[i].match.tournament_id;
+		setOfParticipants[tempPlayerTwo] = true;
+
+	}
+	Parse.Cloud.run('convertIDsToNames', {playerSet : setOfParticipants},
+	{
+		success: function(result)
+		{
+			//	Create key:value dict from id:name.
+			//	use that dict with matches (that have ids)
+			//	to resolve names 
+			var dict = {};
+			for (var i = 0; i < result.length; i++)
+			{
+				var player = JSON.parse(result[i].text);
+				dict[player.participant.id] = player.participant.name;
+			}
+			
+			for (var i = 0; i < matches.length; i++)
+			{
+				var playerOneName = dict[matches[i].match.player1_id];
+				var playerTwoName = dict[matches[i].match.player2_id];
+				var winnerName = dict[matches[i].match.winner_id];
+				var scores = matches[i].match.scores_csv;
+				var bothParts = scores.split('-');
+				var playerOneScore = bothParts[0];
+				var playerTwoScore = bothParts[1];
+
+				var match = new Match(winnerName, playerOneName, playerTwoName, playerOneScore, playerTwoScore);
+				console.log(match);
+			}
+		},
+		error: function()
+		{
+			console.log("Failed converting ID's to Names");
+		}
+	});
 }
 
 </script>
